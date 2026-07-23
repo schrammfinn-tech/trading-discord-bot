@@ -1,0 +1,24 @@
+{
+  "name": "trading-dc-server",
+  "version": "1.0.0",
+  "description": "A complete trading Discord bot with paper trading, real-time market data, and portfolio management",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7",
+    "yahoo-finance2": "^2.3.3",
+    "node-fetch": "^2.7.0",
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/node-fetch": "^2.6.12",
+    "typescript": "^5.7.3"
+  }
+}
