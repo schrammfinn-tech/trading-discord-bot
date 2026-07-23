@@ -1088,17 +1088,20 @@ async function handleSlashSetChannel(interaction: ChatInputCommandInteraction) {
   const configKey = configMap[type];
   if (!configKey) { await interaction.editReply({ content: "Unknown type." }); return; }
 
-  const fs = await import("fs");
-  const envPath = ".env";
-  let envContent = "";
-  try { envContent = fs.readFileSync(envPath, "utf-8"); } catch {}
+  const isRailway = !!process.env.RAILWAY_ENVIRONMENT;
+  if (!isRailway) {
+    const fs = await import("fs");
+    const envPath = ".env";
+    let envContent = "";
+    try { envContent = fs.readFileSync(envPath, "utf-8"); } catch {}
 
-  if (envContent.includes(`${configKey}=`)) {
-    envContent = envContent.replace(new RegExp(`${configKey}=.*`, "g"), `${configKey}=${channelId}`);
-  } else {
-    envContent += `\n${configKey}=${channelId}`;
+    if (envContent.includes(`${configKey}=`)) {
+      envContent = envContent.replace(new RegExp(`${configKey}=.*`, "g"), `${configKey}=${channelId}`);
+    } else {
+      envContent += `\n${configKey}=${channelId}`;
+    }
+    fs.writeFileSync(envPath, envContent, "utf-8");
   }
-  fs.writeFileSync(envPath, envContent, "utf-8");
 
   (CONFIG as any)[configKey] = channelId;
   const { client } = await import("../index");
