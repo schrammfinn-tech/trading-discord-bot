@@ -1,4 +1,4 @@
-import { Client, SlashCommandBuilder, EmbedBuilder, Message, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionsBitField, TextChannel, CategoryChannel, GuildMember, Role, ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js";
+import { Client, SlashCommandBuilder, EmbedBuilder, Message, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionsBitField, TextChannel, CategoryChannel, GuildMember, Role, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, PermissionOverwrites } from "discord.js";
 import { CONFIG } from "../config";
 import { db } from "../database";
 import { getQuote, getMultipleQuotes, resolveAssetType } from "../services/market";
@@ -1317,6 +1317,63 @@ export async function handleMemberJoin(member: GuildMember): Promise<void> {
         .setTimestamp();
       await (introChannel as TextChannel).send({ embeds: [pubEmbed] });
     }
+
+    // Create private profit/loss channel
+    try {
+      let goalsCategory = guild.channels.cache.find(
+        (c) => c.name === "🎯 MEMBER GOALS" && c.type === ChannelType.GuildCategory
+      ) as CategoryChannel | undefined;
+
+      if (!goalsCategory) {
+        goalsCategory = await guild.channels.create({
+          name: "🎯 MEMBER GOALS",
+          type: ChannelType.GuildCategory,
+          reason: "Auto-created for member tracking channels",
+        });
+      }
+
+      const channelName = `📊-${member.user.username.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 20)}`;
+
+      const existing = guild.channels.cache.find(
+        (c) => c.name === channelName && c.parentId === goalsCategory!.id
+      );
+      if (!existing) {
+        const adminRole = guild.roles.cache.find((r) => r.name === "Admin");
+        const modRole = guild.roles.cache.find((r) => r.name === "Moderator");
+
+        const permissionOverwrites: any[] = [
+          { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+          { id: member.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
+        ];
+        if (adminRole) permissionOverwrites.push({ id: adminRole.id, allow: [PermissionsBitField.Flags.ViewChannel] });
+        if (modRole) permissionOverwrites.push({ id: modRole.id, allow: [PermissionsBitField.Flags.ViewChannel] });
+
+        const goalChannel = await guild.channels.create({
+          name: channelName,
+          type: ChannelType.GuildText,
+          parent: goalsCategory.id,
+          topic: `${member.user.username}'s profit & loss tracker`,
+          permissionOverwrites,
+          reason: "Member goals channel",
+        });
+
+        const goalEmbed = new EmbedBuilder()
+          .setColor(COLORS.primary)
+          .setTitle(`📊 ${member.user.username}'s Trading Journal`)
+          .setDescription(
+            `Welcome to your personal profit & loss tracker.\n\n` +
+            `**Starting Balance:** $10,000\n` +
+            `**Goal:** Grow your portfolio\n\n` +
+            `Use \`/portfolio\` to check your stats.\n` +
+            `Use \`/balance\` for your net worth.\n` +
+            `Good luck! 🚀`
+          )
+          .setFooter({ text: "Only you and staff can see this channel" })
+          .setTimestamp();
+
+        await (goalChannel as TextChannel).send({ embeds: [goalEmbed] });
+      }
+    } catch {}
   } catch {}
 }
 
